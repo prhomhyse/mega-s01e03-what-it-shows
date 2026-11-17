@@ -13,11 +13,12 @@ signature: Promise Akpan
   import RenderStamp from '#lib/kb/RenderStamp.svelte';
 </script>
 
-[#4471](/kb/incidents/4471) is marked known: one bug, one fix queued. Read one by one, its reports
-describe three problems. The queued parser fix closes only the first one.
+[#4471](/kb/incidents/4471) was merged as one issue and closed on 5 October: the parser is fixed and
+the booking-v3 form is retired. Read one by one, its reports describe three problems. Two are now
+closed. The third, a one-day shift, is still open: neither change touches it.
 
 <Callout kind="warn">
-Not one issue. Each problem below has its own ticket, and the parser fix does not close the other two.
+#4471 is closed, but not everything in it is fixed. Reports of a date one day off still belong to an open ticket.
 </Callout>
 
 ## What #4471 holds
@@ -27,12 +28,13 @@ Not one issue. Each problem below has its own ticket, and the parser fix does no
 ## How to tell them apart
 
 - **`parser`**: day and month swapped (7 April → 4 July). Came in by app, email, or a booking-v2 form.
-  The shared parser reads every date month first; our tenants write the day first.
-- **`hint`**: also a swap, but it came in through a **booking-v3** form. That form prints
-  `MM/DD/YYYY` under its date field and then reads the value day first. People do what the hint says.
-  Fix the hint, not the parser.
+  The shared parser read every date month first; our tenants write the day first. Fixed.
+- **`hint`**: also a swap, but it came in through a **booking-v3** form. That form printed
+  `MM/DD/YYYY` under its date field and then read the value day first. People did what the hint said.
+  The form is retired, so no fix is planned.
 - **`shift`**: the date moved by **one day** (Tuesday 12 May → Monday 11 May). No swap does that.
   These are the desk's one-day moves (`desk-notes.json`). The reports point to time zones and DST.
+  Still open.
 
 The subject line tells you none of this. Read the body and look up the tenant: where they are and
 which booking form they run. Intake's tag comes from the reporter's browser and is often wrong.
@@ -40,6 +42,6 @@ which booking form they run. Intake's tag comes from the reporter's browser and 
 ## Lessons
 
 - A big ticket can be several bugs that look alike. Merging by subject ([0001](/kb/decisions/0001-dedupe-by-subject)) hid two of them.
-- Count once per report id: the ticket export repeats some reports.
+- Closing the big ticket does not close what was merged into it. Check each problem against the fix.
 
 <RenderStamp {signature} />

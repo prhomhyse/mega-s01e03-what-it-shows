@@ -13,39 +13,41 @@
       .sort((a, b) => b[1] - a[1])
       .map(([tag, n]) => `${tag} ×${n}`)
       .join(' · ');
-  const intakeMiss = $derived(
-    split.groups.reduce((n, g) => n + g.reports.filter((r) => r.meta.intakeTag !== g.problem).length, 0),
-  );
 </script>
 
 <p class="sum">
-  <strong>{split.merged.length}</strong> reports in #{ticket} ({split.rows - split.merged.length} export duplicates removed) ·
-  <strong>{split.groups.length}</strong> {split.groups.length === 1 ? 'problem' : 'problems'}
+  <strong>{split.merged}</strong> reports in #{ticket} ({split.rows - split.merged} export duplicates removed) ·
+  <strong>{split.problems.length}</strong> {split.problems.length === 1 ? 'problem' : 'problems'}
+  {#if split.unplaced} · {split.unplaced} with no tenant on file{/if}
 </p>
 
 <table>
   <thead>
-    <tr><th>problem</th><th>reports</th><th>ticket</th><th>tenants</th><th>seen</th><th>intake tagged as</th></tr>
+    <tr><th>problem</th><th>reports</th><th>ticket</th><th>state</th><th>tenants</th><th>seen</th><th>intake tagged as</th></tr>
   </thead>
   <tbody>
-    {#each split.groups as g (g.problem)}
-      {@const p = g.problem === 'unplaced' ? null : PROBLEMS[g.problem]}
-      <tr class:wrong={!p}>
-        <td><code>{g.problem}</code><br /><span class="what">{p?.what ?? 'no tenant on file'}</span></td>
-        <td><strong>{g.reports.length}</strong></td>
-        <td>{#if p}<a href="{ISSUES_URL}/{p.issue}">#{p.issue}</a>{:else}none{/if}</td>
-        <td>{g.tenants}</td>
-        <td>{g.firstSeen} → {g.lastSeen}</td>
-        <td class="tags">{tags(g.taggedAs)}</td>
+    {#each split.problems as p (p.problem)}
+      {@const info = PROBLEMS[p.problem]}
+      <tr class:open={info.state === 'open'}>
+        <td><code>{p.problem}</code><br /><span class="what">{info.what}</span></td>
+        <td><strong>{p.reports}</strong></td>
+        <td><a href="{ISSUES_URL}/{info.issue}">#{info.issue}</a></td>
+        <td><b class="state">{info.state}</b><br /><span class="what">{info.why}</span></td>
+        <td>{p.tenants}</td>
+        <td>{p.firstSeen} → {p.lastSeen}</td>
+        <td class="tags">{tags(p.taggedAs)}</td>
       </tr>
     {/each}
   </tbody>
 </table>
 
-<p class="note">Intake's tag disagrees with the problem on {intakeMiss} of {split.merged.length} reports: it guessed from the reporter's browser, not the tenant.</p>
+{#each split.problems.filter((p) => p.problem === 'shift') as s (s.problem)}
+  <p class="note">The {s.reports} <code>shift</code> reports are counted where the desk files them too ({s.alsoIn.map((c) => `#${PROBLEMS[c].issue} ${c}`).join(', ')}), so the rows add up to more than {split.merged}.</p>
+{/each}
 
 <style>
   .sum { font-size: 1.1rem; }
   .what, .tags, .note { color: var(--muted); font-size: 0.85em; }
-  .wrong td { background: var(--warn-bg); }
+  .open td { background: var(--warn-bg); }
+  .open .state { color: var(--warn); }
 </style>

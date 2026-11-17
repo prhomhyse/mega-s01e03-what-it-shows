@@ -1,27 +1,25 @@
 // What #4471 actually holds: one entry per problem, each with its own ticket.
-// causes.ts files a report by tenant and channel. That is right for the two flip bugs, but it
-// also files the desk's one-day moves (desk-notes.json) under `parser`. No day/month swap moves a
-// date by one day, so those reports are a problem of their own: `shift`.
-import { causeOf, uniqueById, type Report, type Tenant } from '#lib/kb/causes';
+// Counts follow the desk's own view (causes.ts, as CauseTable runs it): a report is filed by
+// tenant and channel, so `parser` and `hint` split the ticket. The desk's one-day moves
+// (desk-notes.json) stay counted where they are filed, and they are a problem of their own too:
+// no day/month swap moves a date by one day. That is `shift`, with its own ticket.
+import { groupByCause, readAs, uniqueById, type Cause, type Report, type Tenant } from '#lib/kb/causes';
 
-export type Problem = 'parser' | 'hint' | 'shift' | 'unplaced';
-
-export const PROBLEMS: Record<Exclude<Problem, 'unplaced'>, { what: string; issue: number }> = {
-  parser: { what: 'Shared parser reads day-first dates month first', issue: 1 },
-  hint: { what: 'booking-v3 form hint says MM/DD, the form reads day first', issue: 2 },
-  shift: { what: 'Date lands one day off (time zone), not a day/month swap', issue: 3 },
-};
+export type Problem = Cause | 'shift';
+export type State = 'fixed' | "won't fix" | 'open';
 
 export const ISSUES_URL = 'https://github.com/prhomhyse/mega-s01e03-what-it-shows/issues';
 
-export function problemOf(r: Report, t: Tenant | undefined, oneDayMove: readonly string[]): Problem {
-  if (oneDayMove.includes(r.id)) return 'shift';
-  return causeOf(r, t) ?? 'unplaced';
-}
+export const PROBLEMS: Record<Problem, { what: string; issue: number; state: State; why: string }> = {
+  parser: { what: 'Shared parser reads day-first dates month first', issue: 1, state: 'fixed', why: 'fix(dates): parse dd/mm for eu locales' },
+  hint: { what: 'booking-v3 form hint says MM/DD, the form reads day first', issue: 2, state: "won't fix", why: 'booking-v3 form retired' },
+  shift: { what: 'Date lands one day off (time zone), not a day/month swap', issue: 3, state: 'open', why: 'neither fix moves a date by one day' },
+};
 
-export type ProblemGroup = {
+export type ProblemRow = {
   problem: Problem;
-  reports: Report[];
+  reports: number;
+  alsoIn: Problem[];
   taggedAs: Record<string, number>;
   tenants: number;
   firstSeen: string;
@@ -33,25 +31,27 @@ export function splitTicket(
   ticket: number,
   tenantOf: (r: Report) => Tenant | undefined,
   oneDayMove: readonly string[],
-): { rows: number; merged: Report[]; groups: ProblemGroup[] } {
+): { rows: number; merged: number; problems: ProblemRow[]; unplaced: number } {
   const merged = uniqueById(all).filter((r) => r.mergedInto === ticket);
-  const by = new Map<Problem, Report[]>();
-  for (const r of merged) {
-    const p = problemOf(r, tenantOf(r), oneDayMove);
-    by.set(p, [...(by.get(p) ?? []), r]);
+  const groups = groupByCause(merged, tenantOf);
+  const problems: ProblemRow[] = [];
+  let unplaced = 0;
+  for (const g of groups) {
+    if (g.cause === 'unplaced') { unplaced = g.reports.length; continue; }
+    problems.push({ problem: g.cause, reports: g.reports.length, alsoIn: readAs(g, oneDayMove) ? ['shift'] : [], taggedAs: g.taggedAs, tenants: g.tenants, firstSeen: g.firstSeen, lastSeen: g.lastSeen });
   }
-  const groups = [...by.entries()]
-    .map(([problem, rs]) => {
-      const days = rs.map((r) => r.receivedAt.slice(0, 10)).sort();
-      return {
-        problem,
-        reports: rs,
-        taggedAs: rs.reduce<Record<string, number>>((n, r) => ({ ...n, [r.meta.intakeTag]: (n[r.meta.intakeTag] ?? 0) + 1 }), {}),
-        tenants: new Set(rs.map((r) => r.tenant)).size,
-        firstSeen: days[0],
-        lastSeen: days[days.length - 1],
-      };
-    })
-    .sort((a, b) => b.reports.length - a.reports.length);
-  return { rows: all.filter((r) => r.mergedInto === ticket).length, merged, groups };
+  const moved = merged.filter((r) => oneDayMove.includes(r.id));
+  if (moved.length) {
+    const days = moved.map((r) => r.receivedAt.slice(0, 10)).sort();
+    problems.push({
+      problem: 'shift',
+      reports: moved.length,
+      alsoIn: groups.filter((g) => g.cause !== 'unplaced' && readAs(g, oneDayMove)).map((g) => g.cause as Problem),
+      taggedAs: moved.reduce<Record<string, number>>((n, r) => ({ ...n, [r.meta.intakeTag]: (n[r.meta.intakeTag] ?? 0) + 1 }), {}),
+      tenants: new Set(moved.map((r) => r.tenant)).size,
+      firstSeen: days[0],
+      lastSeen: days[days.length - 1],
+    });
+  }
+  return { rows: all.filter((r) => r.mergedInto === ticket).length, merged: merged.length, problems, unplaced };
 }
