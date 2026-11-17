@@ -1,0 +1,45 @@
+---
+layout: runbook
+title: '#4471 split · three problems, three tickets'
+owner: Promise Akpan
+status: open
+reviewed: 2026-11-17
+signature: Promise Akpan
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+[#4471](/kb/incidents/4471) is marked known: one bug, one fix queued. Read one by one, its reports
+describe three problems. The queued parser fix closes only the first one.
+
+<Callout kind="warn">
+Not one issue. Each problem below has its own ticket, and the parser fix does not close the other two.
+</Callout>
+
+## What #4471 holds
+
+<ProblemTable ticket={4471} />
+
+## How to tell them apart
+
+- **`parser`**: day and month swapped (7 April → 4 July). Came in by app, email, or a booking-v2 form.
+  The shared parser reads every date month first; our tenants write the day first.
+- **`hint`**: also a swap, but it came in through a **booking-v3** form. That form prints
+  `MM/DD/YYYY` under its date field and then reads the value day first. People do what the hint says.
+  Fix the hint, not the parser.
+- **`shift`**: the date moved by **one day** (Tuesday 12 May → Monday 11 May). No swap does that.
+  These are the desk's one-day moves (`desk-notes.json`). The reports point to time zones and DST.
+
+The subject line tells you none of this. Read the body and look up the tenant: where they are and
+which booking form they run. Intake's tag comes from the reporter's browser and is often wrong.
+
+## Lessons
+
+- A big ticket can be several bugs that look alike. Merging by subject ([0001](/kb/decisions/0001-dedupe-by-subject)) hid two of them.
+- Count once per report id: the ticket export repeats some reports.
+
+<RenderStamp {signature} />

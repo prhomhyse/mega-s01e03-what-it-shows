@@ -34,3 +34,12 @@ Support desk. Decision records: whoever signed them.
 ---
 
 Exported 2026-10-04 from the `support` repo, `apps/kb/` → `src/`.
+
+## Added in this repo (MEGA.dev S01E03)
+
+- `src/routes/kb/incidents/4471-split/+page.svx`: the signed page that splits #4471 into its three
+  problems. Rendered as the desk sees it: `rendered/kb/incidents/4471-split/index.html`.
+- `src/lib/kb/problems.ts` and `src/lib/kb/ProblemTable.svelte`: the logic and table behind it.
+- Tickets, one per problem: [#1 parser](../../issues/1) · [#2 hint](../../issues/2) · [#3 shift](../../issues/3).
+- `package.json`, `svelte.config.js`, `vite.config.js`, `src/app.html`, `src/routes/+layout.ts`: render
+  scaffolding only. `npm install && npm run build` writes every page to `rendered/`.
