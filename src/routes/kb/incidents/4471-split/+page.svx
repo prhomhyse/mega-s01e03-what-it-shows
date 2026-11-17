@@ -4,7 +4,7 @@ title: '#4471 split · three problems, three tickets'
 owner: Promise Akpan
 status: open
 reviewed: 2026-11-17
-signature: Promise Akpan
+signature: 'v1.eyJzdWIiOiIyNDMxIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTQ4Nzk1NTAsImV4cCI6MTc5NDk2NTk1MH0.tcTxt_wrGw7QEZ4oyT5qxTioxXCD4As1RWtLoHvpNVM'
 ---
 
 <script>
